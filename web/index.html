@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CFR Retrieval</title>
+<link rel="stylesheet" href="/static/style.css?v={{V}}">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>CFR Retrieval</h1>
+      <span class="sub" id="corpusline">loading corpus…</span>
+      <a href="/label">Labelling &rarr;</a>
+    </div>
+  </header>
+
+  <form class="searchbar" id="form">
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="How long can a large quantity generator keep hazardous waste on site?"
+           maxlength="500" aria-label="Search the Code of Federal Regulations">
+    <button type="submit" id="go">Search</button>
+  </form>
+
+  <div class="controls">
+    <div class="grp">
+      <label><input type="checkbox" id="lexical" checked> BM25</label>
+      <label><input type="checkbox" id="dense" checked> Dense</label>
+      <label><input type="checkbox" id="rerank" checked> Rerank</label>
+    </div>
+    <div class="grp">
+      <label>Chunking
+        <select id="strategy">
+          <option value="structured" selected>structured</option>
+          <option value="contextual">contextual</option>
+          <option value="fixed">fixed</option>
+          <option value="section">section</option>
+        </select>
+      </label>
+    </div>
+    <div class="grp">
+      <label><input type="checkbox" id="generate" checked> Write an answer</label>
+    </div>
+    <span class="hint">Turn stages off to see what each one contributes.</span>
+  </div>
+
+  <div class="examples" id="examples">
+    <b>Try</b>
+    <button class="chip" type="button">How long can a large quantity generator keep hazardous waste on site?</button>
+    <button class="chip" type="button">40 CFR 262.11</button>
+    <button class="chip" type="button">What safety gear does an employer have to pay for?</button>
+    <button class="chip" type="button">When can the FDA stop my clinical trial?</button>
+    <button class="chip" type="button">What is the best pizza dough hydration ratio?</button>
+  </div>
+
+  <div id="strip" class="strip" hidden></div>
+  <div id="answer"></div>
+  <div id="results"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <h3 id="drawer-cite"></h3>
+      <p id="drawer-heading"></p>
+    </div>
+    <button class="close" id="drawer-close" aria-label="Close source">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<script src="/static/app.js?v={{V}}"></script>
+</body>
+</html>

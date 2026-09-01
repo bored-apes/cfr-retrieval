@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+tests/
+data/*.db-wal
+data/*.db-shm
+evaldata/pool.jsonl
+.env

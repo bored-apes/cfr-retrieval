@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relevance labelling</title>
+<link rel="stylesheet" href="/static/style.css?v={{V}}">
+<style>
+  .judge { background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:22px 24px; }
+  .qline { font-size:17px; font-weight:600; margin:0 0 4px; max-width:70ch; }
+  .qmeta { font-family:var(--mono); font-size:11.5px; color:var(--ink-3); margin-bottom:20px; }
+  .cand { border-top:1px solid var(--rule); padding-top:18px; }
+  .cand h3 { font-family:var(--mono); font-size:13px; margin:0 0 3px; }
+  .cand .sub { font-size:13.5px; color:var(--ink-2); margin:0 0 10px; }
+  .cand .snip { font-size:13.5px; color:var(--ink-2); max-width:86ch; margin-bottom:16px; }
+  .grades { display:flex; gap:8px; flex-wrap:wrap; }
+  .grade { font:inherit; font-size:13px; padding:9px 15px; border-radius:3px; cursor:pointer;
+           background:var(--surface-2); border:1px solid var(--rule-strong); color:var(--ink); text-align:left; }
+  .grade:hover { border-color:var(--accent); }
+  .grade b { display:block; font-family:var(--mono); font-size:11px; color:var(--ink-3); }
+  .progress { height:4px; background:var(--surface-3); border-radius:3px; overflow:hidden; margin:16px 0 24px; }
+  .progress span { display:block; height:100%; background:var(--accent-line); }
+  .foundby { font-family:var(--mono); font-size:11px; color:var(--info); margin-bottom:14px; }
+  kbd { font-family:var(--mono); font-size:10.5px; border:1px solid var(--rule-strong); border-bottom-width:2px;
+        border-radius:3px; padding:1px 5px; color:var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Relevance labelling</h1>
+      <span class="sub" id="count">loading…</span>
+      <a href="/">&larr; Search</a>
+    </div>
+  </header>
+
+  <div class="progress"><span id="bar" style="width:0%"></span></div>
+  <div id="app"><p class="empty">Loading pool…</p></div>
+
+  <p class="hint" style="margin-top:26px">
+    Grade what the <em>section</em> does for the <em>question</em>, not how well written it is.
+    Keys <kbd>0</kbd>–<kbd>3</kbd> grade, <kbd>s</kbd> skips. Judgements are written to the
+    <code>qrels</code> table immediately.
+  </p>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let queue = [], total = 0, judged = 0;
+
+async function load() {
+  const r = await fetch("/api/pool?limit=200");
+  const d = await r.json();
+  queue = d.items || [];
+  total = d.total || 0;
+  judged = d.judged || 0;
+  if (!queue.length) {
+    $("app").innerHTML = `<p class="empty">${esc(d.message || "Nothing left to judge. Run `cfr eval` next.")}</p>`;
+    $("count").textContent = `${judged}/${total} judged`;
+    return;
+  }
+  show();
+}
+
+function show() {
+  const it = queue[0];
+  if (!it) return load();
+  $("count").textContent = `${judged}/${total} judged · ${queue.length} in this batch`;
+  $("bar").style.width = total ? `${(judged / total) * 100}%` : "0%";
+
+  $("app").innerHTML = `<div class="judge">
+    <p class="qline">${esc(it.query)}</p>
+    <p class="qmeta">${esc(it.query_id)} · type: ${esc(it.type || "—")}</p>
+    <div class="cand">
+      <div class="foundby">surfaced by: ${esc((it.found_by || []).join(", ") || "—")} · best rank ${it.best_rank}</div>
+      <h3>${esc(it.citation)}</h3>
+      <p class="sub">${esc(it.heading)}</p>
+      <p class="snip">${esc(it.snippet)}…</p>
+      <div class="grades">
+        <button class="grade" data-g="3"><b>3</b> Directly answers it</button>
+        <button class="grade" data-g="2"><b>2</b> Partly answers it</button>
+        <button class="grade" data-g="1"><b>1</b> Related background</button>
+        <button class="grade" data-g="0"><b>0</b> Irrelevant</button>
+        <button class="grade" data-g="skip"><b>s</b> Skip</button>
+      </div>
+    </div>
+  </div>`;
+
+  $("app").querySelectorAll(".grade").forEach((b) =>
+    b.addEventListener("click", () => judge(b.dataset.g)));
+}
+
+async function judge(grade) {
+  const it = queue.shift();
+  if (grade !== "skip") {
+    await fetch("/api/judge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query_id: it.query_id, doc_id: it.doc_id, grade: +grade }),
+    });
+    judged += 1;
+  }
+  show();
+}
+
+document.addEventListener("keydown", (e) => {
+  if (["0", "1", "2", "3"].includes(e.key)) judge(e.key);
+  else if (e.key.toLowerCase() === "s") judge("skip");
+});
+
+load();
+</script>
+</body>
+</html>

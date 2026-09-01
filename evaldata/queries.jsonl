@@ -1,0 +1,60 @@
+{"query_id": "x01", "type": "exact", "query": "What does 40 CFR 262.17 require?"}
+{"query_id": "x02", "type": "exact", "query": "29 CFR 1910.1200 hazard communication requirements"}
+{"query_id": "x03", "type": "exact", "query": "21 CFR 312.42 clinical hold"}
+{"query_id": "x04", "type": "exact", "query": "lockout tagout control of hazardous energy 1910.147"}
+{"query_id": "x05", "type": "exact", "query": "EPA identification number requirement for generators"}
+{"query_id": "x06", "type": "exact", "query": "respiratory protection standard 1910.134"}
+{"query_id": "x07", "type": "exact", "query": "definition of very small quantity generator"}
+{"query_id": "x08", "type": "exact", "query": "IND safety reporting 312.32"}
+{"query_id": "x09", "type": "exact", "query": "machine guarding general requirements"}
+{"query_id": "x10", "type": "exact", "query": "hazardous waste manifest form 8700-22"}
+{"query_id": "x11", "type": "exact", "query": "40 CFR 262.11 hazardous waste determination"}
+{"query_id": "x12", "type": "exact", "query": "permit-required confined spaces 1910.146"}
+{"query_id": "p01", "type": "paraphrase", "query": "How long can a large quantity generator keep hazardous waste on site?"}
+{"query_id": "p02", "type": "paraphrase", "query": "How long can a small business store waste before it has to ship it out?"}
+{"query_id": "p03", "type": "paraphrase", "query": "Do I have to train employees who handle hazardous waste?"}
+{"query_id": "p04", "type": "paraphrase", "query": "What do I do if a drum of waste starts leaking?"}
+{"query_id": "p05", "type": "paraphrase", "query": "When do I have to report a spill that happens during transport?"}
+{"query_id": "p06", "type": "paraphrase", "query": "Do I need a permit to accumulate waste in my shop?"}
+{"query_id": "p07", "type": "paraphrase", "query": "What paperwork has to travel with a shipment of hazardous waste?"}
+{"query_id": "p08", "type": "paraphrase", "query": "How do I figure out whether what I am throwing away counts as hazardous?"}
+{"query_id": "p09", "type": "paraphrase", "query": "When can the FDA stop my clinical trial?"}
+{"query_id": "p10", "type": "paraphrase", "query": "What must I tell the FDA if a patient is seriously harmed in my drug study?"}
+{"query_id": "p11", "type": "paraphrase", "query": "Does my employer have to provide an eyewash station?"}
+{"query_id": "p12", "type": "paraphrase", "query": "What safety gear does an employer have to pay for?"}
+{"query_id": "p13", "type": "paraphrase", "query": "How often do I need to inspect emergency equipment?"}
+{"query_id": "p14", "type": "paraphrase", "query": "Can I keep waste longer than normal if my site is far from a disposal facility?"}
+{"query_id": "p15", "type": "paraphrase", "query": "What records do I have to keep after shipping waste off site?"}
+{"query_id": "p16", "type": "paraphrase", "query": "Who is allowed to sign the shipping paper for hazardous waste?"}
+{"query_id": "p17", "type": "paraphrase", "query": "What information has to be on a chemical container label at work?"}
+{"query_id": "p18", "type": "paraphrase", "query": "Do I need a written plan before sending someone into a tank?"}
+{"query_id": "m01", "type": "multihop", "query": "If a small quantity generator becomes a large quantity generator, how does the allowed storage time change?"}
+{"query_id": "m02", "type": "multihop", "query": "What are the container condition and labeling rules for a satellite accumulation area?"}
+{"query_id": "m03", "type": "multihop", "query": "How does training for hazardous waste handlers compare with training for respirator users?"}
+{"query_id": "m04", "type": "multihop", "query": "If a transporter has a discharge of hazardous waste, what must they do and who must they notify?"}
+{"query_id": "m05", "type": "multihop", "query": "What can trigger a clinical hold and what must the sponsor do after one is imposed?"}
+{"query_id": "m06", "type": "multihop", "query": "A generator ships waste but never receives the signed manifest copy back. What are the obligations?"}
+{"query_id": "m07", "type": "multihop", "query": "What air emission standards and container requirements apply to waste accumulated in tanks?"}
+{"query_id": "m08", "type": "multihop", "query": "Which rules cover both selecting personal protective equipment and deciding who pays for it?"}
+{"query_id": "m09", "type": "multihop", "query": "How do accumulation limits change if a generator treats waste on site?"}
+{"query_id": "c01", "type": "comparison", "query": "Difference between large quantity generator and small quantity generator accumulation limits"}
+{"query_id": "c02", "type": "comparison", "query": "Is a satellite accumulation area treated differently from a central accumulation area?"}
+{"query_id": "c03", "type": "comparison", "query": "How do transporter manifest duties differ from generator manifest duties?"}
+{"query_id": "c04", "type": "comparison", "query": "Difference between an IND safety report and an IND annual report"}
+{"query_id": "c05", "type": "comparison", "query": "Compare the 90 day and 180 day hazardous waste accumulation periods"}
+{"query_id": "c06", "type": "comparison", "query": "Which protective equipment must the employer pay for and which may the employee pay for?"}
+{"query_id": "n01", "type": "negation", "query": "When is a generator not required to have an EPA identification number?"}
+{"query_id": "n02", "type": "negation", "query": "What wastes are excluded from hazardous waste regulation?"}
+{"query_id": "n03", "type": "negation", "query": "When does the 90 day accumulation limit not apply?"}
+{"query_id": "n04", "type": "negation", "query": "What personal protective equipment is the employer not required to pay for?"}
+{"query_id": "n05", "type": "negation", "query": "When is a manifest not required for a hazardous waste shipment?"}
+{"query_id": "n06", "type": "negation", "query": "In what situations is an IND not required before shipping a drug?"}
+{"query_id": "o01", "type": "out_of_scope", "query": "What is the best hydration ratio for pizza dough?"}
+{"query_id": "o02", "type": "out_of_scope", "query": "How do I file my personal income tax return?"}
+{"query_id": "o03", "type": "out_of_scope", "query": "What are the downtown Chicago parking regulations?"}
+{"query_id": "o04", "type": "out_of_scope", "query": "How do I house train a golden retriever puppy?"}
+{"query_id": "o05", "type": "out_of_scope", "query": "What is the capital of Australia?"}
+{"query_id": "o06", "type": "out_of_scope", "query": "How much does a Tesla Model 3 cost?"}
+{"query_id": "o07", "type": "out_of_scope", "query": "What are the visa requirements for visiting Japan?"}
+{"query_id": "o08", "type": "out_of_scope", "query": "Write a Python function that reverses a linked list"}
+{"query_id": "o09", "type": "out_of_scope", "query": "What time does the Super Bowl start this year?"}

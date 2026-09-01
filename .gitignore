@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+evaldata/pool.jsonl
+# ablation.md/.json and qrels.jsonl ARE committed - they are the deliverable
+.env
+.DS_Store
+
+.pytest_cache/

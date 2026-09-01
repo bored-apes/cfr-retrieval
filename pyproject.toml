@@ -1,0 +1,22 @@
+[project]
+name = "cfr-retrieval"
+version = "0.1.0"
+description = "Hybrid retrieval over the US Code of Federal Regulations, with a measured ablation"
+requires-python = ">=3.9"
+dependencies = [
+    "fastembed>=0.3",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "httpx>=0.27",
+    "numpy>=1.24",
+]
+
+[project.scripts]
+cfr = "cfr.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,37 @@
+# fly.toml — the free-tier shape. `fly launch --no-deploy` then `fly deploy`.
+app = "cfr-retrieval"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  CFR_DAILY_BUDGET = "500"
+  CFR_ABSTAIN_THRESHOLD = "0.50"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Scaling to zero keeps this inside the free allowance. The trade is a cold
+  # start of a few seconds; the index is baked into the image so it is not worse
+  # than that.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 12
+    hard_limit = 25
+
+[[vm]]
+  # The cross-encoder is CPU-bound and the vector matrix sits in RAM.
+  size = "shared-cpu-2x"
+  memory = "1gb"
+
+[checks.health]
+  type = "http"
+  path = "/api/health"
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "40s"
