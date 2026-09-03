@@ -21,11 +21,20 @@ Two one-time steps:
    Leave the apex `bhargavsuhagiya.com` records alone - this only adds a
    subdomain, so the portfolio and email are untouched.
 
-Then in Settings -> Pages, tick **Enforce HTTPS** once the certificate is issued
-(usually within a few minutes of DNS propagating).
+3. **GitHub** - Settings -> Pages -> **Custom domain**: enter
+   `cfr.bhargavsuhagiya.com` and Save.
 
-`static/CNAME` is committed, so Pages picks the domain up on deploy. The Hugging
-Face Space stays live as a mirror; keep it updated with
+   This step is required and easy to miss. A `CNAME` file in the published
+   artifact sets the custom domain only for *branch-based* publishing. With
+   **Source: GitHub Actions**, GitHub ignores it - the deploy succeeds, the file
+   is served at `/CNAME`, and the domain is still never registered, so no
+   certificate is ever requested. The symptom is a `*.github.io` certificate on
+   your domain and a 404 over plain HTTP.
+
+Once saved, GitHub verifies DNS and issues a certificate (usually minutes).
+Then tick **Enforce HTTPS**.
+
+The Hugging Face Space stays live as a mirror; keep it updated with
 `./deploy/make-static-space.sh <you>/<space>`.
 
 
