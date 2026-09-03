@@ -7,5 +7,5 @@ sdk: static
 app_file: index.html
 pinned: false
 license: mit
-short_description: Hybrid retrieval over US federal regulations, running entirely in your browser
+short_description: Hybrid CFR retrieval, entirely in your browser
 ---

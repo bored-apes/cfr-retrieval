@@ -1,5 +1,7 @@
 # CFR Retrieval
 
+**Live demo: <https://bhargavsuhagiya-cfr-retrieval.static.hf.space/>** — no server; the entire pipeline runs in your browser.
+
 Hybrid retrieval over the US Code of Federal Regulations, with a measured
 ablation and mechanically verified citations.
 
@@ -409,8 +411,31 @@ tests/               68 tests; offsets, fusion, metrics, sanitisation, citations
 
 ## Deploying
 
-Full instructions in **[DEPLOY.md](DEPLOY.md)**. Short version — Hugging Face
-Spaces, free CPU tier:
+Live at **<https://bhargavsuhagiya-cfr-retrieval.static.hf.space/>** as a **static** Space: BM25 is rebuilt in JS from the shipped
+chunk text, dense vectors ship int8-quantised (2 MB), and both models come from
+the HF CDN via transformers.js. Total payload 5.4 MB, then everything is
+client-side — which is why it costs nothing to host and scales with visitors
+rather than with a server.
+
+```bash
+python scripts/export_static.py
+./deploy/make-static-space.sh <you>/<space-name>
+```
+
+Two things worth knowing. **Docker Spaces now require HF PRO**, which is what
+pushed this client-side — a constraint that produced a better architecture than
+the one it replaced. And the JS port is a reimplementation: a canary embedding
+in `meta.json` is recomputed in the browser at boot and checked against the
+Python vector (it returns cosine **0.997385**), because a pooling or
+query-prefix mismatch would silently degrade every dense result with no visible
+symptom.
+
+The measured ablation was run against the Python implementation. The browser
+port should track it closely but is not guaranteed identical — BM25 in
+particular is a reimplementation rather than SQLite FTS5.
+
+Full instructions in **[DEPLOY.md](DEPLOY.md)**. For a Docker host (PRO, Fly,
+Cloud Run), the verified image path is still there:
 
 ```bash
 git remote add space https://huggingface.co/spaces/<you>/<space-name>
