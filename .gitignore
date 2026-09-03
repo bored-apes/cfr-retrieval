@@ -1,7 +1,10 @@
 .venv/
 __pycache__/
 *.pyc
-data/
+# Anchored: an unanchored `data/` also matches static/data/, which silently
+# excluded the 5.4 MB browser bundle and left the static build unbuildable
+# for anyone cloning the repo.
+/data/
 evaldata/pool.jsonl
 # ablation.md/.json and qrels.jsonl ARE committed - they are the deliverable
 .env

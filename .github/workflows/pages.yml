@@ -1,0 +1,36 @@
+# Publish the client-side build to GitHub Pages.
+#
+# The app is static by design - BM25, vectors and both models all run in the
+# browser - so there is nothing to build here, just files to serve. Pages gives
+# a free custom domain, which Hugging Face reserves for PRO.
+name: Deploy static site
+
+on:
+  push:
+    branches: [main]
+    paths: ["static/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: static
+      - id: deployment
+        uses: actions/deploy-pages@v4

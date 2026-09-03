@@ -1,5 +1,34 @@
 # Deploying
 
+**Live: <https://cfr.bhargavsuhagiya.com>** (GitHub Pages) and
+<https://bhargavsuhagiya-cfr-retrieval.static.hf.space/> (Hugging Face).
+
+## Custom domain
+
+Hugging Face reserves custom domains for PRO, so the canonical URL is served
+from GitHub Pages instead - free, custom domain included, and it redeploys
+automatically whenever `static/` changes on `main`.
+
+Two one-time steps:
+
+1. **GitHub** - repo Settings -> Pages -> Source: **GitHub Actions**.
+2. **Hostinger DNS** - add a CNAME record:
+
+   | Type | Name | Points to | TTL |
+   |---|---|---|---|
+   | CNAME | `cfr` | `bored-apes.github.io` | default |
+
+   Leave the apex `bhargavsuhagiya.com` records alone - this only adds a
+   subdomain, so the portfolio and email are untouched.
+
+Then in Settings -> Pages, tick **Enforce HTTPS** once the certificate is issued
+(usually within a few minutes of DNS propagating).
+
+`static/CNAME` is committed, so Pages picks the domain up on deploy. The Hugging
+Face Space stays live as a mirror; keep it updated with
+`./deploy/make-static-space.sh <you>/<space>`.
+
+
 Target: **Hugging Face Spaces**, free CPU tier. It is the right host for this
 app — 2 vCPU and 16 GB RAM at no cost and no card required, which matters
 because the vector matrix and two ONNX models want roughly 1 GB resident. Render's
