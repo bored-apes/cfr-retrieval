@@ -1,3 +1,15 @@
+---
+title: CFR Retrieval
+emoji: 🔎
+colorFrom: gray
+colorTo: yellow
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Hybrid retrieval over US federal regulations, with a measured ablation
+---
+
 # CFR Retrieval
 
 Hybrid retrieval over the US Code of Federal Regulations, with a measured
@@ -409,16 +421,23 @@ tests/               68 tests; offsets, fusion, metrics, sanitisation, citations
 
 ## Deploying
 
+Full instructions in **[DEPLOY.md](DEPLOY.md)**. Short version — Hugging Face
+Spaces, free CPU tier:
+
 ```bash
-make build                      # produce data/cfr.db locally, once
-docker build -t cfr-retrieval . # index and models baked into the image
-fly launch --no-deploy && fly deploy
+git lfs install
+git remote add space https://huggingface.co/spaces/<you>/<space-name>
+git checkout -b deploy && git add -f .gitattributes data/cfr.db
+git commit -m "deploy: include prebuilt index" && git push space deploy:main
 ```
 
-The image carries the prebuilt SQLite file and both ONNX models, so the
-container needs no network at runtime and a cold start does not stall the first
-visitor behind a model download. `fly.toml` scales to zero, which keeps it
-inside the free allowance.
+Then set `GEMINI_API_KEY` as a Space **secret**.
+
+The image is verified: it builds, runs as uid 1000 (which Spaces requires),
+honours `$PORT`, answers with verified citations, and sits at **730 MB
+resident** against the free tier's 16 GB. The prebuilt index and both ONNX
+models are baked in, so the container needs no network at runtime and the first
+visitor is not stuck behind a model download.
 
 Run **one** worker. The vector matrix and the rate-limit buckets are both
 per-process: a second worker doubles the memory and silently doubles the
