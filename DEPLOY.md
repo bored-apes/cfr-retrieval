@@ -38,17 +38,17 @@ You get `https://huggingface.co/spaces/<you>/<space-name>`.
 `deploy` branch that includes it, without polluting your GitHub history.
 
 ```bash
-cd "path/to/cfr-retrieval"
-
-git lfs install
+brew install git-lfs                 # once
 git remote add space https://huggingface.co/spaces/<you>/<space-name>
 
-git checkout -b deploy
-git add -f .gitattributes data/cfr.db
-git commit -m "deploy: include prebuilt index"
-git push space deploy:main
+./deploy/make-hf-branch.sh           # assembles the deploy branch
+git push space deploy:main --force
 git checkout main
 ```
+
+`main` stays clean for GitHub — no YAML frontmatter at the top of the README and
+no 112 MB binary, so the repo is ~450 KB. The script adds both onto a `deploy`
+branch that only Hugging Face ever sees.
 
 Git will ask for your Hugging Face username and an access token as the password
 — create one at <https://huggingface.co/settings/tokens> with **write** scope.

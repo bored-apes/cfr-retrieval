@@ -1,15 +1,3 @@
----
-title: CFR Retrieval
-emoji: 🔎
-colorFrom: gray
-colorTo: yellow
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
-short_description: Hybrid retrieval over US federal regulations, with a measured ablation
----
-
 # CFR Retrieval
 
 Hybrid retrieval over the US Code of Federal Regulations, with a measured
@@ -425,10 +413,9 @@ Full instructions in **[DEPLOY.md](DEPLOY.md)**. Short version — Hugging Face
 Spaces, free CPU tier:
 
 ```bash
-git lfs install
 git remote add space https://huggingface.co/spaces/<you>/<space-name>
-git checkout -b deploy && git add -f .gitattributes data/cfr.db
-git commit -m "deploy: include prebuilt index" && git push space deploy:main
+./deploy/make-hf-branch.sh
+git push space deploy:main --force
 ```
 
 Then set `GEMINI_API_KEY` as a Space **secret**.
