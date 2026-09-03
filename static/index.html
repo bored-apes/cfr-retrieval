@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CFR Retrieval — runs entirely in your browser</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>CFR Retrieval</h1>
+      <span class="sub" id="corpusline">loading…</span>
+      <a href="https://github.com/bored-apes/cfr-retrieval" target="_blank" rel="noopener">Source &amp; method →</a>
+    </div>
+  </header>
+
+  <div class="boot" id="boot">
+    <h3>Starting the retrieval engine</h3>
+    <div class="boot-step" id="s-data"><span class="dot"></span><span>Corpus &amp; vectors (5.4 MB)</span></div>
+    <div class="boot-step" id="s-bm25"><span class="dot"></span><span>Building the BM25 index</span></div>
+    <div class="boot-step" id="s-embed"><span class="dot"></span><span>Embedding model (bge-small, ~33 MB)</span></div>
+    <div class="boot-step" id="s-rerank"><span class="dot"></span><span>Cross-encoder reranker (~23 MB)</span></div>
+    <div class="bar"><span id="bootbar"></span></div>
+    <p class="note">
+      Everything runs on your machine — there is no server. Models download once
+      from the Hugging Face CDN and are cached by your browser, so reloads are instant.
+    </p>
+  </div>
+
+  <form class="searchbar" id="form" hidden>
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="How long can a large quantity generator keep hazardous waste on site?"
+           maxlength="500" aria-label="Search the Code of Federal Regulations">
+    <button type="submit" id="go">Search</button>
+  </form>
+
+  <div class="controls" id="controls" hidden>
+    <div class="grp">
+      <label><input type="checkbox" id="lexical" checked> BM25</label>
+      <label><input type="checkbox" id="dense" checked> Dense</label>
+      <label><input type="checkbox" id="rerank" checked> Rerank</label>
+    </div>
+    <div class="grp">
+      <label><input type="checkbox" id="generate"> Write an answer</label>
+    </div>
+    <span class="hint">Turn stages off to see what each one contributes.</span>
+  </div>
+
+  <div class="keyrow" id="keyrow" hidden>
+    <input id="apikey" type="password" placeholder="Gemini API key (optional, stays in this browser)"
+           autocomplete="off" spellcheck="false">
+    <button class="ghost" type="button" id="savekey">Save</button>
+    <small>
+      Written answers need your own key from
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+      It is kept in this browser's local storage, sent only to Google, and never
+      reaches any server of mine — there isn't one. Retrieval works without it.
+    </small>
+  </div>
+
+  <div class="examples" id="examples" hidden>
+    <b>Try</b>
+    <button class="chip" type="button">How long can a large quantity generator keep hazardous waste on site?</button>
+    <button class="chip" type="button">40 CFR 262.11</button>
+    <button class="chip" type="button">What safety gear does an employer have to pay for?</button>
+    <button class="chip" type="button">When can the FDA stop my clinical trial?</button>
+    <button class="chip" type="button">What is the best pizza dough hydration ratio?</button>
+  </div>
+
+  <div id="strip" class="strip" hidden></div>
+  <div id="answer"></div>
+  <div id="results"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <h3 id="drawer-cite"></h3>
+      <p id="drawer-heading"></p>
+    </div>
+    <button class="close" id="drawer-close" aria-label="Close source">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -33,10 +33,17 @@ def embed_documents(texts: Sequence[str], batch_size: int = 64) -> np.ndarray:
 
 
 def embed_query(text: str) -> np.ndarray:
-    """bge models expect an instruction prefix on queries but not on passages.
+    """Embed a user query.
 
-    fastembed's query_embed applies it, so use this rather than embed_documents
-    for anything a user typed - mixing them costs real accuracy.
+    Verified empirically: for BAAI/bge-small-en-v1.5, fastembed's query_embed
+    applies NO instruction prefix - it is byte-identical to embed() on the same
+    string (cosine 1.000000). BGE's model card suggests prefixing short queries
+    with "Represent this sentence for searching relevant passages: ", and doing
+    so moves the vector materially (cosine 0.98 against the unprefixed one).
+
+    The index was built without a prefix, so queries must be too. Anything that
+    re-implements this - the browser port in static/ - has to match, or every
+    dense result silently degrades.
     """
     vec = next(iter(_model().query_embed([text])))
     return np.asarray(vec, dtype=np.float32)
