@@ -6,6 +6,30 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _load_dotenv(path: Path) -> None:
+    """Read KEY=VALUE lines from .env into the environment.
+
+    Hand-rolled rather than pulling in python-dotenv: it is fifteen lines and
+    keeps the dependency list to five packages. Real environment variables
+    always win, so `GEMINI_API_KEY=... python -m cfr.cli` still overrides the
+    file.
+    """
+    if not path.exists():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv(ROOT / ".env")
 DATA_DIR = Path(os.environ.get("CFR_DATA_DIR", ROOT / "data"))
 EVAL_DIR = Path(os.environ.get("CFR_EVAL_DIR", ROOT / "evaldata"))
 WEB_DIR = ROOT / "web"
@@ -72,6 +96,11 @@ ABSTAIN_THRESHOLD = float(os.environ.get("CFR_ABSTAIN_THRESHOLD", "0.20"))
 # means several chunks of one relevant section scored alike - the system
 # working, not failing. Ambiguity additionally requires the cluster to span
 # several *different* sections; one section answering well is not ambiguous.
+# The ambiguity rule is off by default because it was measured and did not earn
+# its place - see `cfr calibrate --ambiguity`. Its premise (several sections
+# tied => the question is unclear) is indistinguishable at runtime from several
+# sections being *all relevant*, which is what a multi-source answer looks like.
+AMBIGUITY_ENABLED = os.environ.get("CFR_AMBIGUITY", "0") not in ("0", "false", "")
 AMBIGUITY_BAND = 0.15      # only consider tau .. tau + this
 AMBIGUITY_SPREAD = 0.05    # top minus median of the shortlist
 AMBIGUITY_MIN_DOCS = 3     # distinct sections in the tie
@@ -79,7 +108,23 @@ AMBIGUITY_MIN_DOCS = 3     # distinct sections in the tie
 # --- generation -------------------------------------------------------------
 LLM_PROVIDER = os.environ.get("CFR_LLM_PROVIDER", "gemini")  # gemini | groq | none
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("CFR_GEMINI_MODEL", "gemini-2.0-flash")
+# Pin an explicit version. Google retires models from the API faster than the
+# listing suggests - both gemini-2.0-flash and gemini-2.5-flash return 404
+# "no longer available to new users" while still appearing in ListModels, so
+# check `generateContent` actually works rather than trusting the list.
+# `gemini-flash-latest` also works but moves under you, which is the wrong
+# trade when eval numbers need to be reproducible.
+# Measured on 6 real queries, cache disabled: flash-lite p50 5.4s with 19/19
+# citations surviving verbatim-quote verification; gemini-3.6-flash p50 27.7s
+# with 36/36. Both are perfectly groundable, so the 5x latency buys more
+# citations per answer, not more trustworthy ones. Lite is the right default
+# for a public demo; switch via CFR_GEMINI_MODEL for thoroughness.
+#
+# The "-latest" alias is deliberate here: Google retires pinned versions
+# aggressively (gemini-2.0-flash and gemini-2.5-flash both return 404 "no
+# longer available to new users" while still appearing in ListModels), so a
+# pinned default rots. Pin explicitly when you need reproducible eval numbers.
+GEMINI_MODEL = os.environ.get("CFR_GEMINI_MODEL", "gemini-flash-lite-latest")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL = os.environ.get("CFR_GROQ_MODEL", "llama-3.3-70b-versatile")
 

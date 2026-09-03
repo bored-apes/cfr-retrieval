@@ -82,12 +82,28 @@ def _hits(scores, doc_ids=None):
 
 
 def test_abstains_when_distinct_sections_tie_near_the_threshold(monkeypatch):
-    """Several different sections scoring alike, just above tau: ambiguous."""
+    """Several different sections scoring alike, just above tau: ambiguous.
+
+    Only when the rule is enabled - it ships off, because measurement showed it
+    refuses answerable queries whose relevant sections legitimately tie.
+    """
+    monkeypatch.setattr("cfr.config.AMBIGUITY_ENABLED", True)
     monkeypatch.setattr("cfr.config.ABSTAIN_THRESHOLD", 0.50)
     hits = _hits([0.56, 0.555, 0.55, 0.545, 0.54],
                  ["d1", "d2", "d3", "d4", "d5"])
     abstain, reason, _ = A.should_abstain(SearchResult(query="x", hits=hits))
     assert abstain and reason == "ambiguous"
+
+
+def test_ambiguity_rule_is_off_by_default(monkeypatch):
+    """Shipped default: several relevant sections tying is a multi-source answer,
+    not an unclear question, and the runtime cannot tell those apart."""
+    monkeypatch.setattr("cfr.config.ABSTAIN_THRESHOLD", 0.20)
+    hits = _hits([0.249, 0.234, 0.226, 0.223, 0.218],
+                 ["d1", "d2", "d3", "d4", "d5"])
+    abstain, reason, _ = A.should_abstain(SearchResult(query="x", hits=hits))
+    assert not abstain, "must answer when the top hit clears tau"
+    assert reason == ""
 
 
 def test_confident_cluster_from_one_section_is_not_ambiguous(monkeypatch):
@@ -97,6 +113,7 @@ def test_confident_cluster_from_one_section_is_not_ambiguous(monkeypatch):
     near 0.9, so top/median was always about 1.0. Eight chunks of the single
     section that answers the question is the best possible outcome, and the
     system used to refuse to answer it."""
+    monkeypatch.setattr("cfr.config.AMBIGUITY_ENABLED", True)
     monkeypatch.setattr("cfr.config.ABSTAIN_THRESHOLD", 0.50)
     hits = _hits([0.911, 0.905, 0.904, 0.899, 0.890],
                  ["ecfr:40:262.17"] * 5)
@@ -108,6 +125,7 @@ def test_confident_cluster_from_one_section_is_not_ambiguous(monkeypatch):
 def test_tight_cluster_of_distinct_docs_high_above_threshold_is_answered(monkeypatch):
     """Well above tau, tight clustering means several sections are all
     relevant - a multi-hop answer, not an ambiguous question."""
+    monkeypatch.setattr("cfr.config.AMBIGUITY_ENABLED", True)
     monkeypatch.setattr("cfr.config.ABSTAIN_THRESHOLD", 0.50)
     hits = _hits([0.92, 0.915, 0.91, 0.905, 0.90], ["d1", "d2", "d3", "d4", "d5"])
     abstain, _, _ = A.should_abstain(SearchResult(query="x", hits=hits))

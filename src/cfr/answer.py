@@ -176,7 +176,8 @@ def should_abstain(result: SearchResult) -> Tuple[bool, str, float]:
     # the one section that answers the question is the strongest possible
     # outcome, not an ambiguous one - so require both a marginal score and a
     # spread across distinct sections.
-    if len(scores) >= 4 and top < config.ABSTAIN_THRESHOLD + config.AMBIGUITY_BAND:
+    if (config.AMBIGUITY_ENABLED and len(scores) >= 4
+            and top < config.ABSTAIN_THRESHOLD + config.AMBIGUITY_BAND):
         shortlist = scores[:5]
         median = sorted(shortlist)[len(shortlist) // 2]
         distinct_docs = len({h.doc_id for h in result.hits[:5]})

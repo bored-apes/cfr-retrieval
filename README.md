@@ -164,11 +164,32 @@ make calibrate
 τ = 0.20 is the shipped default: it declines **100% of out-of-scope queries**
 while falsely refusing **0%** of answerable ones.
 
-Writing this sweep also caught a bug in the recommender itself. It originally
-picked the *lowest* threshold meeting the accuracy target — which is τ = 0.00,
-a setting that hits 94% accuracy while refusing nothing at all, defeating the
-entire gate. Accuracy-on-answered is only half the objective; the recommender
-now maximises correct refusals subject to a false-abstention ceiling.
+**The ambiguity rule was measured and removed.** The design called for a second
+signal — several sections scoring alike means the question is unclear — and it
+sounded reasonable enough to ship without checking. At identical τ = 0.20:
+
+| | coverage | accuracy | false abstain | correct refusals |
+|---|---|---|---|---|
+| ambiguity **off** | **85%** | 94% | **0%** | 100% |
+| ambiguity on | 83% | 94% | 2% | 100% |
+
+It costs coverage, adds false abstentions, and refuses no more out-of-scope
+queries. The premise is the problem: at runtime, "four sections tied because the
+question is vague" is indistinguishable from "four sections tied because they
+are all relevant" — which is what a multi-source answer looks like. It ships
+disabled (`CFR_AMBIGUITY=1` to measure it yourself).
+
+Writing this sweep caught **two** bugs in the calibration itself:
+
+- It picked the *lowest* threshold meeting the accuracy target — τ = 0.00, which
+  hits 94% accuracy while refusing nothing at all, defeating the entire gate.
+  Accuracy-on-answered is half the objective; it now maximises correct refusals
+  under a false-abstention ceiling.
+- It **re-implemented the threshold comparison instead of calling
+  `should_abstain`**, so it reported 0% false abstention while the running app
+  was refusing answerable queries through the ambiguity rule. A calibration that
+  measures something the application does not do is worse than no calibration.
+  It now calls the real function.
 
 ### Where it fails
 

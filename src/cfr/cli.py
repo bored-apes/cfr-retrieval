@@ -224,6 +224,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--target-accuracy", type=float, default=0.90)
     sp.add_argument("--max-false-abstain", type=float, default=0.05,
                     help="ceiling on answerable queries wrongly refused")
+    sp.add_argument("--ambiguity", type=int, choices=(0, 1), default=None,
+                    help="force the ambiguity rule on/off (default: sweep both)")
     sp.set_defaults(func=cmd_calibrate)
 
     sp = sub.add_parser("pool", help="build a labelling pool from multiple configs")

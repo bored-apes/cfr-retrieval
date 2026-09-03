@@ -295,10 +295,15 @@ def _markdown(rows: List[Dict], n_answerable: int) -> str:
 def calibrate(args) -> int:
     """Sweep the abstention threshold and print the coverage/accuracy trade-off.
 
-    Coverage is the share of queries answered; accuracy is how often an answered
-    query put a genuinely relevant section at rank 1. They trade against each
-    other, and picking tau is choosing where on that curve you want to sit.
+    Calls the real `should_abstain` rather than re-implementing a threshold
+    comparison. An earlier version compared top_score to tau directly, so it
+    reported 0% false abstention while the deployed system was refusing
+    answerable queries via the ambiguity rule - the sweep was measuring
+    something the app does not do.
     """
+    from .. import answer as answer_mod
+    from .. import config as cfg_mod
+
     conn = db.connect()
     db.init(conn)
     queries = load_queries(getattr(args, "queries", None))
@@ -310,103 +315,94 @@ def calibrate(args) -> int:
     cfg = RetrievalConfig(name="calibration", strategy=args.strategy,
                           use_lexical=True, use_dense=True, use_rerank=True, final_k=10)
     qvecs = _query_vectors(queries)
-    results = run_config(conn, cfg, queries, qvecs)
+    retriever = Retriever(conn, cfg)
 
+    print("running {} queries...".format(len(queries)), flush=True)
     records = []
     for q in queries:
-        qid = q["query_id"]
-        r = results.get(qid)
-        if not r:
-            continue
-        rel = qrels.get(qid, {})
-        answerable = any(g > 0 for g in rel.values())
-        top_ok = bool(r["ranked"]) and rel.get(r["ranked"][0], 0) > 0
-        records.append({"answerable": answerable, "score": r["top_score"], "top_ok": top_ok})
+        res = retriever.search(q["query"], qvec=qvecs.get(q["query_id"]))
+        rel = qrels.get(q["query_id"], {})
+        records.append({
+            "result": res,
+            "answerable": any(g > 0 for g in rel.values()),
+            "top_ok": bool(res.hits) and rel.get(res.hits[0].doc_id, 0) > 0,
+        })
 
     n_answerable = sum(1 for r in records if r["answerable"])
     n_oos = len(records) - n_answerable
-    print("\n{} answerable, {} out-of-scope\n".format(n_answerable, n_oos))
-    head = "{:>6} {:>10} {:>12} {:>14} {:>16}".format(
-        "tau", "coverage", "accuracy", "false abstain", "correct refusals")
-    print(head)
-    print("-" * len(head))
 
-    best = None
-    for i in range(0, 21):
-        tau = i / 20.0
-        answered = [r for r in records if r["score"] >= tau]
-        ans_answerable = [r for r in answered if r["answerable"]]
-        coverage = len(answered) / len(records) if records else 0.0
-        accuracy = (sum(1 for r in ans_answerable if r["top_ok"]) / len(ans_answerable)
-                    if ans_answerable else float("nan"))
-        false_abstain = (sum(1 for r in records if r["answerable"] and r["score"] < tau)
-                         / n_answerable) if n_answerable else float("nan")
-        correct_refuse = (sum(1 for r in records if not r["answerable"] and r["score"] < tau)
-                          / n_oos) if n_oos else float("nan")
-        print("{:>6.2f} {:>9.0%} {:>11} {:>13} {:>15}".format(
-            tau, coverage,
-            "--" if accuracy != accuracy else "{:.0%}".format(accuracy),
-            "--" if false_abstain != false_abstain else "{:.0%}".format(false_abstain),
-            "--" if correct_refuse != correct_refuse else "{:.0%}".format(correct_refuse)))
-        target = getattr(args, "target_accuracy", 0.90)
-        max_false = getattr(args, "max_false_abstain", 0.05)
-        # Picking the *lowest* threshold that hits the accuracy target is wrong:
-        # tau=0 always hits it and refuses nothing, which defeats the gate
-        # entirely. The gate exists to decline out-of-scope questions, so choose
-        # the threshold that refuses the most of them while staying inside the
-        # accuracy target and a false-abstention ceiling.
-        if (accuracy == accuracy and accuracy >= target
-                and false_abstain == false_abstain and false_abstain <= max_false
-                and correct_refuse == correct_refuse):
-            candidate = (correct_refuse, -false_abstain, coverage, tau, accuracy)
-            if best is None or candidate > best:
-                best = candidate
+    want_ambiguity = getattr(args, "ambiguity", None)
+    modes = [False, True] if want_ambiguity is None else [bool(want_ambiguity)]
+    original_tau = cfg_mod.ABSTAIN_THRESHOLD
+    original_amb = cfg_mod.AMBIGUITY_ENABLED
+    best_overall = None
 
-    print("-" * len(head))
-    if best:
-        correct_refuse, neg_false, coverage, tau, accuracy = best
-        print("\nBest tau: {:.2f}".format(tau))
-        print("  refuses {:.0%} of out-of-scope queries".format(correct_refuse))
-        print("  {:.0%} accuracy on the {:.0%} of queries it answers".format(accuracy, coverage))
-        print("  falsely abstains on {:.0%} of answerable queries".format(-neg_false))
-        print("\nSet CFR_ABSTAIN_THRESHOLD={:.2f} to adopt it.".format(tau))
-    else:
-        print("\nNo threshold met the target accuracy within the false-abstention ceiling.")
-        print("Either the target is too high for this corpus, or retrieval needs work")
-        print("before abstention can save you.")
+    try:
+        for amb in modes:
+            cfg_mod.AMBIGUITY_ENABLED = amb
+            print("\n{} answerable, {} out-of-scope   [ambiguity rule {}]".format(
+                n_answerable, n_oos, "ON" if amb else "OFF"))
+            head = "{:>6} {:>10} {:>12} {:>14} {:>16}".format(
+                "tau", "coverage", "accuracy", "false abstain", "correct refusals")
+            print(head)
+            print("-" * len(head))
+            best = None
+
+            for i in range(0, 21):
+                tau = i / 20.0
+                cfg_mod.ABSTAIN_THRESHOLD = tau
+                answered, ans_answerable, false_ab, correct_ref = [], [], 0, 0
+                for rec in records:
+                    abstain, _reason, _score = answer_mod.should_abstain(rec["result"])
+                    if abstain:
+                        if rec["answerable"]:
+                            false_ab += 1
+                        else:
+                            correct_ref += 1
+                    else:
+                        answered.append(rec)
+                        if rec["answerable"]:
+                            ans_answerable.append(rec)
+
+                coverage = len(answered) / len(records) if records else 0.0
+                accuracy = (sum(1 for r in ans_answerable if r["top_ok"]) / len(ans_answerable)
+                            if ans_answerable else float("nan"))
+                false_rate = (false_ab / n_answerable) if n_answerable else float("nan")
+                refuse_rate = (correct_ref / n_oos) if n_oos else float("nan")
+
+                print("{:>6.2f} {:>9.0%} {:>11} {:>13} {:>15}".format(
+                    tau, coverage,
+                    "--" if accuracy != accuracy else "{:.0%}".format(accuracy),
+                    "--" if false_rate != false_rate else "{:.0%}".format(false_rate),
+                    "--" if refuse_rate != refuse_rate else "{:.0%}".format(refuse_rate)))
+
+                target = getattr(args, "target_accuracy", 0.90)
+                max_false = getattr(args, "max_false_abstain", 0.05)
+                if (accuracy == accuracy and accuracy >= target
+                        and false_rate == false_rate and false_rate <= max_false
+                        and refuse_rate == refuse_rate):
+                    cand = (refuse_rate, -false_rate, coverage, tau, accuracy, amb)
+                    if best is None or cand > best:
+                        best = cand
+            print("-" * len(head))
+
+            if best:
+                refuse_rate, neg_false, coverage, tau, accuracy, _ = best
+                print("  best tau {:.2f}: refuses {:.0%} of out-of-scope, "
+                      "{:.0%} accuracy over {:.0%} coverage, {:.0%} false abstain".format(
+                          tau, refuse_rate, accuracy, coverage, -neg_false))
+                if best_overall is None or best[:3] > best_overall[:3]:
+                    best_overall = best
+            else:
+                print("  no threshold met the target within the false-abstention ceiling")
+    finally:
+        cfg_mod.ABSTAIN_THRESHOLD = original_tau
+        cfg_mod.AMBIGUITY_ENABLED = original_amb
+
+    if best_overall:
+        refuse_rate, neg_false, coverage, tau, accuracy, amb = best_overall
+        print("\nAdopt: CFR_ABSTAIN_THRESHOLD={:.2f}  CFR_AMBIGUITY={}".format(
+            tau, "1" if amb else "0"))
+        print("  refuses {:.0%} of out-of-scope | {:.0%} accuracy | {:.0%} coverage | "
+              "{:.0%} false abstain".format(refuse_rate, accuracy, coverage, -neg_false))
     return 0
-
-
-def _print_failures(
-    conn,
-    row: Dict,
-    results: Dict[str, Dict],
-    qrels: Dict[str, Dict[str, int]],
-    queries: Sequence[Dict],
-    limit: int,
-) -> None:
-    """The worst queries under the best config, with what it returned instead.
-
-    Publishing this is the fastest way to build credibility: it shows you know
-    where your own system breaks, which almost nobody bothers to do.
-    """
-    by_id = {q["query_id"]: q for q in queries}
-    scored = [
-        (m["ndcg"], qid) for qid, m in row["per_query"].items() if m["ndcg"] is not None
-    ]
-    if not scored:
-        return
-
-    scored.sort()
-    print("\n\nWorst {} queries under '{}':".format(limit, row["name"]))
-    print("=" * 72)
-    for ndcg, qid in scored[:limit]:
-        q = by_id.get(qid, {})
-        rel = qrels.get(qid, {})
-        got = results.get(qid, {}).get("ranked", [])[:3]
-        want = sorted(((g, d) for d, g in rel.items() if g > 0), reverse=True)[:3]
-        print("\n[{}] nDCG@10 = {:.3f}   ({})".format(qid, ndcg, q.get("type", "?")))
-        print("  Q: {}".format(q.get("query", "")))
-        print("  wanted: {}".format(", ".join("{} (grade {})".format(d, g) for g, d in want) or "-"))
-        print("  got:    {}".format(", ".join(got) or "-"))
-    print("\n" + "=" * 72)
