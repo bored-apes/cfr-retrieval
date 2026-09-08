@@ -132,6 +132,48 @@ def cmd_ask(args) -> int:
     return 0
 
 
+def cmd_graph(args) -> int:
+    """Run the LangGraph port. Same pipeline, explicit control flow."""
+    import json as _json
+    import uuid
+
+    from .graph import build_graph, render_mermaid
+
+    if args.show:
+        print(render_mermaid())
+        return 0
+
+    graph = build_graph(with_review=not args.no_review)
+    cfg = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    out = graph.invoke({"query": args.query, "strategy": args.strategy}, config=cfg)
+
+    itr = out.get("__interrupt__")
+    if itr:
+        payload = itr[0].value
+        print("\n[paused for human review] confidence {:.3f}".format(payload["confidence"]))
+        print("  {}".format(payload["answer"][:300]))
+        print("  {} citation(s) verified".format(payload["citations"]))
+        if args.approve is None:
+            print("\n  Re-run with --approve or --reject to resume.")
+            return 0
+        from langgraph.types import Command
+        decision = "approve" if args.approve else "reject"
+        print("\n  resuming with: {}".format(decision))
+        out = graph.invoke(Command(resume={"decision": decision}), config=cfg)
+
+    print("\nstatus     : {}".format(out.get("status")))
+    print("confidence : {:.4f}".format(out.get("confidence") or 0.0))
+    print("attempts   : {}".format(out.get("generate_attempts")))
+    print("citations  : {} verified, {} dropped".format(
+        len(out.get("citations") or []), out.get("citations_dropped") or 0))
+    print("timings    : {}".format({k: round(v) for k, v in (out.get("timings_ms") or {}).items()}))
+    print("\n{}".format(out.get("answer") or ""))
+    for c in (out.get("citations") or []):
+        print("  [{}] {}  chars {}-{}".format(
+            c["source"], c["citation"], c["doc_char_start"], c["doc_char_end"]))
+    return 0
+
+
 def cmd_eval(args) -> int:
     from .eval import run as eval_run
 
@@ -207,6 +249,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("query")
     sp.add_argument("--strategy", default="structured", choices=chunk_mod.STRATEGIES)
     sp.set_defaults(func=cmd_ask)
+
+    sp = sub.add_parser("graph", help="run the LangGraph port of the pipeline")
+    sp.add_argument("query", nargs="?", default="")
+    sp.add_argument("--strategy", default="structured", choices=chunk_mod.STRATEGIES)
+    sp.add_argument("--show", action="store_true", help="print the graph as mermaid and exit")
+    sp.add_argument("--no-review", action="store_true", help="disable the human-in-the-loop gate")
+    sp.add_argument("--approve", dest="approve", action="store_true", default=None)
+    sp.add_argument("--reject", dest="approve", action="store_false")
+    sp.set_defaults(func=cmd_graph)
 
     sp = sub.add_parser("eval", help="run the ablation over the labelled set")
     sp.add_argument("--configs", nargs="*", help="config names to run (default: all)")

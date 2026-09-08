@@ -261,6 +261,54 @@ Grades are 0–3, not binary, because nDCG needs the gradations to mean anything
 
 ---
 
+## The same pipeline as a graph
+
+The pipeline is also implemented as a **LangGraph** state graph in
+[`src/cfr/graph/`](src/cfr/graph/). Both paths call the same retrieval,
+reranking and verification code, so the two can be compared without confounds —
+`cfr.answer` remains the baseline.
+
+```
+START → retrieve → rerank → gate ─┬─ abstain ─────────────────────→ END
+                                  └─ generate → verify ─┬─ retry → generate
+                                                        ├─ review → finalise
+                                                        └─ done  → finalise
+```
+
+Two things the graph has that the hand-rolled version does not:
+
+- **A self-correction loop.** If verification rejects *every* citation, the graph
+  routes back to `generate` once with the failing quotes in the prompt. The
+  hand-rolled version serves the answer with its citations silently stripped.
+- **A human-in-the-loop gate.** Answers whose confidence lands within 0.15 of the
+  abstention threshold suspend at `review` via `interrupt()`, with state
+  persisted by the checkpointer so the pause survives the process. A reviewer
+  approves or rejects; rejection withholds the answer.
+
+```bash
+cfr graph "How long can a large quantity generator keep waste on site?"
+cfr graph --show          # print the graph as mermaid
+```
+
+### Was the framework worth it?
+
+Same six queries through both paths, cache cleared between each call:
+
+| | hand-rolled | LangGraph |
+|---|---|---|
+| p50 end-to-end | 4,450 ms | 4,178 ms |
+| top hit agrees | — | **6/6** |
+| status agrees | — | **6/6** |
+
+**Orchestration overhead is not measurable at this scale.** The −272 ms delta is
+LLM API variance, not a speedup — the honest reading is that the abstraction is
+free here and the port is behaviourally equivalent.
+
+That makes the trade a design question rather than a performance one. The graph
+buys explicit control flow, resumable state, and a retry loop that would have
+been fiddly to bolt onto the imperative version; it costs a dependency and a
+layer of indirection over what was already only five stages.
+
 ## Verified citations
 
 A model that emits `[3]` has produced a token, not a promise. So it is also

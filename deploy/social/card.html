@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: SG; src: url("FONTS/SpaceGrotesk-700.ttf"); font-weight: 700; }
+  @font-face { font-family: SG; src: url("FONTS/SpaceGrotesk-500.ttf"); font-weight: 500; }
+  @font-face { font-family: In; src: url("FONTS/Inter-400.ttf"); font-weight: 400; }
+  @font-face { font-family: In; src: url("FONTS/Inter-500.ttf"); font-weight: 500; }
+  @font-face { font-family: In; src: url("FONTS/Inter-600.ttf"); font-weight: 600; }
+
+  @page { size: 1200px 675px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    width: 1200px; height: 675px;
+    background: #0d1117;
+    color: #e3e9f1;
+    font-family: In, sans-serif;
+    padding: 54px 62px 46px;
+    position: relative;
+  }
+
+  /* accent hairline down the left, echoing the app's citation highlight */
+  .rail { position: absolute; left: 0; top: 0; width: 6px; height: 675px;
+          background: linear-gradient(180deg, #f0b429 0%, #6d5df6 100%); }
+
+  .eyebrow { font-family: In; font-size: 15px; letter-spacing: 2.4px; text-transform: uppercase;
+             color: #6c7887; font-weight: 600; }
+
+  h1 { font-family: SG; font-weight: 700; font-size: 62px; line-height: 1.06;
+       letter-spacing: -1.4px; margin-top: 16px; color: #ffffff; }
+  h1 .hl { background: rgba(240,180,41,.20); box-shadow: 0 2px 0 #f0b429; padding: 0 4px; }
+
+  .sub { font-size: 21px; line-height: 1.45; color: #a0abba; margin-top: 18px; max-width: 640px; }
+  .sub b { color: #e3e9f1; font-weight: 600; }
+
+  /* the measurement, as a table because that is the actual artifact */
+  table { position: absolute; right: 62px; top: 176px; border-collapse: collapse; width: 428px; }
+  th { font-family: In; font-size: 12.5px; letter-spacing: 1.4px; text-transform: uppercase;
+       color: #6c7887; font-weight: 600; text-align: right; padding: 0 0 9px 22px; }
+  th.l { text-align: left; padding-left: 0; }
+  td { font-size: 17px; padding: 9px 0 9px 22px; text-align: right;
+       border-top: 1px solid #262e3a; font-family: In; color: #a0abba; }
+  td.l { text-align: left; padding-left: 0; color: #e3e9f1; font-weight: 500; }
+  tr.win td { color: #ffffff; }
+  tr.win td.l { color: #ffffff; font-weight: 600; }
+  .slow { color: #f08a65; font-weight: 600; }
+
+  .verdict { position: absolute; right: 62px; top: 400px; width: 428px;
+             border-left: 3px solid #f0b429; padding: 10px 0 10px 16px; }
+  .verdict .d { font-family: SG; font-weight: 700; font-size: 25px; color: #ffffff; }
+  .verdict .c { font-size: 14.5px; color: #a0abba; margin-top: 5px; font-family: In; }
+
+  /* the twist: it was load-bearing, just not for the reason it was added */
+  .twist { position: absolute; left: 62px; top: 356px; width: 615px;
+           border-top: 1px solid #262e3a; padding-top: 20px; }
+  .twist .t { font-family: SG; font-weight: 700; font-size: 26px; color: #ffffff; line-height: 1.25; }
+  .twist .t em { font-style: normal; color: #f0b429; }
+  .twist .c { font-size: 15px; color: #a0abba; margin-top: 9px; line-height: 1.48; }
+  .cmp { display: flex; gap: 34px; margin-top: 15px; }
+  .cmp div { font-size: 14px; color: #6c7887; }
+  .cmp b { display: block; font-family: SG; font-weight: 700; font-size: 25px; margin-bottom: 2px; }
+  .cmp .no b { color: #f08a65; }
+  .cmp .yes b { color: #2fcbae; }
+
+  .foot { position: absolute; left: 62px; right: 62px; bottom: 44px;
+          display: flex; justify-content: space-between; align-items: flex-end; }
+  .foot .url { font-family: SG; font-weight: 500; font-size: 22px; color: #f0b429; }
+  .foot .who { font-size: 14.5px; color: #6c7887; text-align: right; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="rail"></div>
+
+  <div class="eyebrow">Retrieval engineering · measured, not assumed</div>
+  <h1>The expensive part<br><span class="hl">didn't earn its keep.</span></h1>
+  <p class="sub">
+    Every RAG tutorial adds a cross-encoder reranker. I added one too — then
+    hand-labelled <b>1,237 relevance judgements</b> to check whether it actually helped.
+  </p>
+
+  <table>
+    <tr><th class="l">Configuration</th><th>nDCG@10</th><th>p50</th></tr>
+    <tr><td class="l">BM25 only</td><td>0.575</td><td>34 ms</td></tr>
+    <tr><td class="l">Dense only</td><td>0.658</td><td>1 ms</td></tr>
+    <tr class="win"><td class="l">Hybrid (RRF)</td><td>0.701</td><td>32 ms</td></tr>
+    <tr><td class="l">+ cross-encoder</td><td>0.717</td><td class="slow">1,802 ms</td></tr>
+  </table>
+
+  <div class="verdict">
+    <div class="d">+0.016 nDCG for 56× the latency</div>
+    <div class="c">95% CI [−0.028, +0.061] — spans zero. Not a real gain.</div>
+  </div>
+
+  <div class="twist">
+    <div class="t">So I kept it — for a <em>completely different reason</em>.</div>
+    <div class="c">
+      Fusion scores come from rank position — meaningless in absolute terms. The
+      reranker is the only calibrated signal, and the only reason the system can say
+      <b style="color:#e3e9f1">“I don’t know.”</b>
+    </div>
+    <div class="cmp">
+      <div class="no"><b>0.032 → 0.025</b>fusion score: real match vs. nonsense</div>
+      <div class="yes"><b>0.911 → 0.062</b>cross-encoder: actually separable</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="url">cfr.bhargavsuhagiya.com</div>
+    <div class="who">
+      Hybrid search over US federal regulations<br>
+      Runs entirely in your browser · no server
+    </div>
+  </div>
+</body>
+</html>
