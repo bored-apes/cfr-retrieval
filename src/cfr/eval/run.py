@@ -288,6 +288,41 @@ def _markdown(rows: List[Dict], n_answerable: int) -> str:
     return "\n".join(out) + "\n"
 
 
+def _print_failures(
+    conn,
+    row: Dict,
+    results: Dict[str, Dict],
+    qrels: Dict[str, Dict[str, int]],
+    queries: Sequence[Dict],
+    limit: int,
+) -> None:
+    """The worst queries under the best config, with what it returned instead.
+
+    Publishing this is the fastest way to build credibility: it shows you know
+    where your own system breaks, which almost nobody bothers to do.
+    """
+    by_id = {q["query_id"]: q for q in queries}
+    scored = [
+        (m["ndcg"], qid) for qid, m in row["per_query"].items() if m["ndcg"] is not None
+    ]
+    if not scored:
+        return
+
+    scored.sort()
+    print("\n\nWorst {} queries under '{}':".format(limit, row["name"]))
+    print("=" * 72)
+    for ndcg, qid in scored[:limit]:
+        q = by_id.get(qid, {})
+        rel = qrels.get(qid, {})
+        got = results.get(qid, {}).get("ranked", [])[:3]
+        want = sorted(((g, d) for d, g in rel.items() if g > 0), reverse=True)[:3]
+        print("\n[{}] nDCG@10 = {:.3f}   ({})".format(qid, ndcg, q.get("type", "?")))
+        print("  Q: {}".format(q.get("query", "")))
+        print("  wanted: {}".format(", ".join("{} (grade {})".format(d, g) for g, d in want) or "-"))
+        print("  got:    {}".format(", ".join(got) or "-"))
+    print("\n" + "=" * 72)
+
+
 # --------------------------------------------------------------------------
 # abstention calibration
 # --------------------------------------------------------------------------

@@ -134,7 +134,7 @@ def cmd_ask(args) -> int:
 
 def cmd_graph(args) -> int:
     """Run the LangGraph port. Same pipeline, explicit control flow."""
-    import json as _json
+
     import uuid
 
     from .graph import build_graph, render_mermaid

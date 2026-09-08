@@ -19,7 +19,7 @@ from .. import answer as answer_mod
 from .. import config, db, embed
 from ..search import dense, fusion, lexical
 from ..search import rerank as rerank_mod
-from ..search.pipeline import doc_id_of
+
 from .state import CFRState
 
 MAX_GENERATE_ATTEMPTS = 2
