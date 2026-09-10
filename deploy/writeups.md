@@ -47,7 +47,9 @@ was the previous one; don't run both, the second reads as a rerun of the first.
 > was a plausible idea with zero upside and a 1-in-9 chance of defeating the
 > only guarantee I actually make.
 >
-> Third feature in this project I've built, measured, and switched off.
+> Second feature in this project I've built, measured, and switched off. A third
+> survived only because measuring it caught it doing a different job than the one
+> I added it for.
 >
 > The part I'd defend in an interview is what I *didn't* hand to a model. Three
 > agents — researcher, writer, auditor — under a supervisor that routes on

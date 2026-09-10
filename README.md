@@ -432,10 +432,11 @@ it on for anyone who wants to re-run the measurement on a different corpus, wher
 the vocabulary gap may be real. With it off, the research budget collapses to one
 attempt and a refusal takes 2 hops instead of 3.
 
-This is the third feature in this project to be built, measured, and turned off —
-after the ambiguity rule and, nearly, the cross-encoder. That is the intended
-pattern, not an accident: the measurement is the deliverable, and a negative
-result that is *kept in the repo with its evidence* is worth more than a feature
+This is the second feature in this project to be built, measured, and turned off,
+after the ambiguity rule. A third — the cross-encoder — survived only because the
+measurement caught it doing a different job than the one it was added for. That is
+the intended pattern, not an accident: the measurement is the deliverable, and a
+negative result *kept in the repo with its evidence* is worth more than a feature
 that ships on a plausible story.
 
 ## Verified citations
