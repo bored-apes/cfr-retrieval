@@ -76,19 +76,87 @@ survives intact, it just stops being about architecture.
 
 ### X / Twitter version
 
-> I gave an AI agent one decision to make on its own.
+Attach `social/cfr-agent-finding.png` to post 1 — on X the image is most of the
+reach, and posts 2+ are read almost entirely by people who already stopped.
+Every post below is under 280 characters (X counts a URL as 23 regardless of
+length). No hashtags: they do nothing on X and read as LinkedIn spillover.
+
+**Thread (9 posts).**
+
+> **1/** I gave an AI agent one decision to make on its own.
 >
-> It used it to defeat my safety check.
+> It used it to talk my safety check out of doing its job.
+>
+> [image]
+
+> **2/** Context: I built a search engine over US federal regulations.
+>
+> The hard part isn't finding the text. It's that you can't search for what you
+> can't name.
+>
+> "how long can I store waste oil" returns nothing — the reg says *accumulate*,
+> not store. *90 days*, not how long.
+
+> **3/** Obvious fix, and the textbook agentic-RAG move: let an agent rewrite the
+> question into the regulator's vocabulary before searching.
+>
+> I built it. Then I measured it — 36 rewrites against a graded relevance set.
+>
+> It rescued zero queries.
+
+> **4/** Zero, because every question the corpus could actually answer was
+> already being found.
+>
+> Nothing to rescue. Plenty to break:
+>
+> "Write a Python function that reverses a linked list"
+> → agent rewrote it to "40 CFR"
+> → confidence 0.07 → 0.80
+
+> **5/** 0.20 is where the system refuses to answer.
+>
+> That refusal is the most important thing it does. A regulatory search tool that
+> guesses is worse than no tool.
+>
+> One rewrite walked a linked-list question straight past it into hazardous waste
+> law.
+>
+> 11% of rewrites did this.
+
+> **6/** So it ships disabled. The code is there, the measurement is in the repo,
+> and one flag turns it on for a corpus where the vocabulary gap is real.
+>
+> Second feature in this project I've built, measured, and switched off.
+
+> **7/** The part I'd defend in an interview is what I didn't hand to a model.
+>
+> 3 agents — researcher, writer, auditor — under a supervisor routing on measured
+> state: calibrated threshold, attempt budgets, and the auditor's verdict on whose
+> fault a failure was.
+
+> **8/** Fabricated quotes are the writer's problem and earn a retry.
+>
+> Sources that can't support an answer are the researcher's problem —
+> re-prompting the writer there just buys a more confident fabrication.
+>
+> Exactly one LLM call in the control flow. That was the one that broke it.
+
+> **9/** Live: https://cfr.bhargavsuhagiya.com
+> Code + full measurement: https://github.com/bored-apes/cfr-retrieval
+
+**Single post**, if a thread is more than you want to run — 278 characters,
+image attached:
+
+> I gave an AI agent one decision to make on its own. It used it to defeat my
+> safety check.
 >
 > "Write a Python function that reverses a linked list"
 > → agent rewrote it to "40 CFR"
 > → confidence 0.07 → 0.80
 >
-> (0.20 is where the system is supposed to refuse.)
+> 0.20 is where it's meant to refuse.
 >
-> 11% of rewrites did this. It rescued 0 queries.
->
-> Ships disabled. 🧵
+> 11% of rewrites did this. It rescued 0.
 
 ---
 
