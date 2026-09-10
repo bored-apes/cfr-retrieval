@@ -138,3 +138,26 @@ QUOTE_MATCH_THRESHOLD = 0.95
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 EVAL_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# --- query reformulation (multi-agent researcher) ----------------------------
+# Off by default, and the measurement is why. `scripts/measure_reformulation.py`
+# sampled 36 rewrites over the judged set:
+#
+#   rescued        0    no answerable query needed it - all 51 already clear tau
+#   improved       0
+#   defeated tau   4    11% of rewrites talked an out-of-scope question into
+#                       scoring above the abstention threshold
+#   cost           ~1 s of LLM latency per refusal
+#
+# A rewrite that turns "reverse a linked list" into "40 CFR" and scores 0.80 is
+# not a retrieval improvement, it is the safety property failing. Zero measured
+# upside against an 11% chance of answering a question that should be refused is
+# not a trade worth making, so the feature ships disabled with its evidence.
+ENABLE_REFORMULATION = os.environ.get("CFR_ENABLE_REFORMULATION", "0") not in ("0", "", "false")
+# If it is enabled anyway, a rewrite must still mean roughly what the user asked.
+# Cosine of the original against the rewrite in the retriever's own embedding
+# space; 0.70 blocked 4/4 harmful rewrites and cost nothing, because there was
+# nothing good to cost. Separation at 0.60 was 0.01, which is a coincidence.
+REFORMULATION_MIN_SIMILARITY = float(
+    os.environ.get("CFR_REFORMULATION_MIN_SIMILARITY", "0.70"))

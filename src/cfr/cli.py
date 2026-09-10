@@ -174,6 +174,57 @@ def cmd_graph(args) -> int:
     return 0
 
 
+def cmd_agents(args) -> int:
+    """Run the supervisor-routed multi-agent variant."""
+
+    import uuid
+
+    from .agents import build_agent_graph, render_mermaid
+
+    if args.show:
+        print(render_mermaid())
+        return 0
+
+    graph = build_agent_graph(with_review=not args.no_review)
+    cfg = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    out = graph.invoke({"query": args.query, "strategy": args.strategy}, config=cfg)
+
+    itr = out.get("__interrupt__")
+    if itr:
+        payload = itr[0].value
+        print("\n[paused for human review] confidence {:.3f}".format(
+            payload.get("confidence") or 0.0))
+        print("  {}".format((payload.get("answer") or "")[:300]))
+        print("  {} citation(s) verified".format(payload.get("citations")))
+        print("  route: {}".format(" -> ".join(payload.get("route_history") or [])))
+        if args.approve is None:
+            print("\n  Re-run with --approve or --reject to resume.")
+            return 0
+        from langgraph.types import Command
+        decision = "approve" if args.approve else "reject"
+        print("\n  resuming with: {}".format(decision))
+        out = graph.invoke(Command(resume={"decision": decision}), config=cfg)
+
+    print("\nstatus     : {}".format(out.get("status")))
+    print("confidence : {:.4f}".format(out.get("confidence") or 0.0))
+    print("route      : {}".format(" -> ".join(out.get("route_history") or [])))
+    print("attempts   : {} research, {} write".format(
+        out.get("research_attempts") or 0, out.get("write_attempts") or 0))
+    searched = out.get("search_query") or ""
+    if searched and searched != args.query:
+        print("searched   : {!r}  (reformulated)".format(searched))
+    if out.get("fault"):
+        print("fault      : {} - {}".format(out["fault"], out.get("audit_note") or ""))
+    print("citations  : {} verified, {} dropped".format(
+        len(out.get("citations") or []), out.get("citations_dropped") or 0))
+    print("timings    : {}".format({k: round(v) for k, v in (out.get("timings_ms") or {}).items()}))
+    print("\n{}".format(out.get("answer") or ""))
+    for c in (out.get("citations") or []):
+        print("  [{}] {}  chars {}-{}".format(
+            c["source"], c["citation"], c["doc_char_start"], c["doc_char_end"]))
+    return 0
+
+
 def cmd_eval(args) -> int:
     from .eval import run as eval_run
 
@@ -258,6 +309,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--approve", dest="approve", action="store_true", default=None)
     sp.add_argument("--reject", dest="approve", action="store_false")
     sp.set_defaults(func=cmd_graph)
+
+    sp = sub.add_parser("agents", help="run the supervisor-routed multi-agent variant")
+    sp.add_argument("query", nargs="?", default="")
+    sp.add_argument("--strategy", default="structured", choices=chunk_mod.STRATEGIES)
+    sp.add_argument("--show", action="store_true", help="print the graph as mermaid and exit")
+    sp.add_argument("--no-review", action="store_true", help="disable the human-in-the-loop gate")
+    sp.add_argument("--approve", dest="approve", action="store_true", default=None)
+    sp.add_argument("--reject", dest="approve", action="store_false")
+    sp.set_defaults(func=cmd_agents)
 
     sp = sub.add_parser("eval", help="run the ablation over the labelled set")
     sp.add_argument("--configs", nargs="*", help="config names to run (default: all)")

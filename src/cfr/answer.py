@@ -212,13 +212,15 @@ def build_prompt(query: str, hits: Sequence[Hit]) -> str:
     return "Sources:\n\n{}\n\nQuestion: {}".format("\n\n---\n\n".join(blocks), query)
 
 
-def _call_gemini(prompt: str, timeout: float = 45.0) -> str:
+def _call_gemini(prompt: str, timeout: float = 45.0, system: Optional[str] = None) -> str:
+    """One provider call. `system` overrides the grounding prompt - the agent
+    variant reuses this for query reformulation, which needs different rules."""
     import httpx
 
     url = ("https://generativelanguage.googleapis.com/v1beta/models/"
            "{}:generateContent".format(config.GEMINI_MODEL))
     payload = {
-        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "systemInstruction": {"parts": [{"text": system or SYSTEM_PROMPT}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"},
     }
@@ -229,7 +231,7 @@ def _call_gemini(prompt: str, timeout: float = 45.0) -> str:
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
-def _call_groq(prompt: str, timeout: float = 45.0) -> str:
+def _call_groq(prompt: str, timeout: float = 45.0, system: Optional[str] = None) -> str:
     import httpx
 
     with httpx.Client(timeout=timeout) as client:
@@ -241,13 +243,21 @@ def _call_groq(prompt: str, timeout: float = 45.0) -> str:
                 "temperature": 0.0,
                 "response_format": {"type": "json_object"},
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system or SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
             },
         )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
+
+
+def _call_gemini_with_system(system: str, prompt: str, timeout: float = 45.0) -> str:
+    return _call_gemini(prompt, timeout=timeout, system=system)
+
+
+def _call_groq_with_system(system: str, prompt: str, timeout: float = 45.0) -> str:
+    return _call_groq(prompt, timeout=timeout, system=system)
 
 
 def _provider() -> Optional[str]:

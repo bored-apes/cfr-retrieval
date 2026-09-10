@@ -309,6 +309,135 @@ buys explicit control flow, resumable state, and a retry loop that would have
 been fiddly to bolt onto the imperative version; it costs a dependency and a
 layer of indirection over what was already only five stages.
 
+## And as three agents
+
+The linear graph is one agent with several nodes. [`src/cfr/agents/`](src/cfr/agents/)
+splits it into three specialists under a **supervisor that holds routing
+authority** — the specialists finish and report, and the supervisor decides who
+runs next. The researcher does not know the writer exists.
+
+```
+                    ┌──────────────┐
+       START ──────►│  supervisor  │◄───────────┐
+                    └──────┬───────┘            │
+                           │ routes             │ specialists report back;
+        ┌──────────┬───────┴───────┬─────────┐  │ none calls another
+        ▼          ▼               ▼         ▼  │
+   researcher   writer         auditor    review│
+        └──────────┴───────────────┴────────────┘
+                           │ done
+                           ▼
+                          END
+```
+
+| agent | owns | can be blamed for |
+|---|---|---|
+| **researcher** | retrieval, fusion, reranking | sources that cannot support an answer |
+| **writer** | schema-constrained generation | quotes that are not in the sections cited |
+| **auditor** | span verification **and fault attribution** | — |
+
+The auditor is the reason this shape earns its keep. A verification failure has
+two very different causes, and the linear graph conflates them: it always
+retries the generator. But if the retrieved sections genuinely do not answer the
+question, re-prompting the writer just buys a more confident fabrication. So the
+auditor diagnoses *whose* fault it was — quotes missing from cited sections is
+the writer's problem, no citations attempted at all is the researcher's — and
+the supervisor routes accordingly.
+
+```bash
+cfr agents "How long can a large quantity generator keep waste on site?"
+cfr agents --show         # print the graph as mermaid
+```
+
+### Routing is deterministic, on purpose
+
+An LLM supervisor is the fashionable choice. Every routing decision here is a
+function of state that has already been measured — a confidence score against a
+calibrated threshold, attempt counters against a budget, the auditor's
+attribution — so handing them to a model would add latency, cost and
+nondeterminism to decisions that have an exactly correct answer. Model judgment
+was spent in one place instead: the researcher's query reformulation. Which
+turned out to be the wrong place too, and the next section is the measurement
+that says so.
+
+The invariant the routing enforces:
+
+> an answer may only ship if it was drafted from the sources currently in
+> state, and every quote in it was verified against them.
+
+That is what `drafted_from` is for. Without it, sending work back to the
+researcher produces new sources while the draft written against the *old* ones
+stays in state and ships — verified-looking citations pointing at sections no
+longer in evidence. `test_a_draft_never_outlives_the_sources_it_was_written_from`
+pins it; deleting the check fails three tests.
+
+### What the supervisor costs
+
+Same seven queries through both graphs, cache cleared between calls:
+
+| | linear graph | supervisor + 3 agents |
+|---|---|---|
+| p50 end-to-end | 4,128 ms | 4,139 ms |
+| outcome agreement | — | **7/7** |
+| hops per answer | — | 4 |
+| hops per refusal | — | 2 |
+
+**+11 ms.** Routing is a few dict lookups; the hop count costs nothing. Anything
+expensive in an agent system is an extra model call, not an extra edge.
+
+### The reformulation that didn't earn its call
+
+The researcher's one model call: when a first pass scores below the abstention
+threshold, rewrite the question into regulatory vocabulary and search again.
+Plausible — the corpus says "accumulate" where users say "store", and closing
+that gap is the premise of the whole project.
+
+[`scripts/measure_reformulation.py`](scripts/measure_reformulation.py) sampled
+36 rewrites across the 60 judged queries. The result killed the feature:
+
+| outcome | count |
+|---|---|
+| queries rescued | **0** |
+| rankings improved | **0** |
+| **rewrites that defeated the abstention gate** | **4 / 36 (11%)** |
+| cost | ~1 s of LLM latency per refusal |
+
+Two findings, and the first explains the second. **Only 9 of 60 queries fall
+below the threshold, and all 9 are out of scope** — every answerable query
+already clears τ on the first pass. So reformulation has nothing to rescue on
+this corpus. It has only something to break, and it broke it:
+
+```
+"Write a Python function that reverses a linked list"
+   → "40 CFR"                      confidence 0.07 → 0.80   ✗ crossed τ
+   → "coding error"                confidence 0.07 → 0.28   ✗ crossed τ
+"How do I house train a golden retriever puppy?"
+   → "animal training facility standards care housing sanitation"
+                                   confidence 0.08 → 0.20   ✗ crossed τ
+```
+
+Those are not retrieval improvements. That is the safety property failing: a
+question the system must refuse gets rewritten into one the corpus answers
+confidently, and the calibrated gate — the thing every other number in this
+README is built on — waves it through.
+
+A faithfulness guard is implemented (`roles.reformulate`): cosine of the
+original against the rewrite, in the retriever's own embedding space. At 0.70 it
+blocks 4/4 of the harmful rewrites and costs nothing — because there was nothing
+good to cost.
+
+**It still ships disabled.** A guard that protects a feature with zero measured
+upside is not a reason to keep the feature. `CFR_ENABLE_REFORMULATION=1` turns
+it on for anyone who wants to re-run the measurement on a different corpus, where
+the vocabulary gap may be real. With it off, the research budget collapses to one
+attempt and a refusal takes 2 hops instead of 3.
+
+This is the third feature in this project to be built, measured, and turned off —
+after the ambiguity rule and, nearly, the cross-encoder. That is the intended
+pattern, not an accident: the measurement is the deliverable, and a negative
+result that is *kept in the repo with its evidence* is worth more than a feature
+that ships on a plausible story.
+
 ## Verified citations
 
 A model that emits `[3]` has produced a token, not a promise. So it is also
@@ -422,9 +551,24 @@ src/cfr/
     metrics.py       nDCG, recall, MRR, bootstrap CIs
     pool.py          TREC-style pooling for labelling
     run.py           the ablation + threshold calibration
+  graph/             the same pipeline as a LangGraph state machine
+    state.py         the typed state passed between nodes
+    nodes.py         retrieve, rerank, gate, generate, verify, review
+    build.py         topology, conditional edges, checkpointer
+  agents/            supervisor + three specialists
+    state.py         adds attempt budgets, fault attribution, route history
+    roles.py         researcher, writer, auditor
+    supervisor.py    routing authority; deterministic by design
+    build.py         every specialist reports back, none calls another
 web/                 search UI, source view with span highlighting, labelling UI
-tests/               68 tests; offsets, fusion, metrics, sanitisation, citations,
-                     rate limiting, score calibration, cache staleness
+scripts/
+  compare_graph.py       hand-rolled vs graph, same queries
+  compare_agents.py      linear graph vs supervisor + agents
+  measure_reformulation.py  the measurement that disabled reformulation
+  judge.py, bench.py, export_static.py
+tests/               123 tests; offsets, fusion, metrics, sanitisation, citations,
+                     rate limiting, score calibration, cache staleness, graph
+                     routing, supervisor routing, fault attribution
 ```
 
 ---
