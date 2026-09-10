@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: SG; src: url("FONTS/SpaceGrotesk-700.ttf"); font-weight: 700; }
+  @font-face { font-family: SG; src: url("FONTS/SpaceGrotesk-500.ttf"); font-weight: 500; }
+  @font-face { font-family: In; src: url("FONTS/Inter-400.ttf"); font-weight: 400; }
+  @font-face { font-family: In; src: url("FONTS/Inter-500.ttf"); font-weight: 500; }
+  @font-face { font-family: In; src: url("FONTS/Inter-600.ttf"); font-weight: 600; }
+
+  @page { size: 1200px 675px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    width: 1200px; height: 675px;
+    background: #0d1117;
+    color: #e3e9f1;
+    font-family: In, sans-serif;
+    padding: 54px 62px 46px;
+    position: relative;
+  }
+
+  .rail { position: absolute; left: 0; top: 0; width: 6px; height: 675px;
+          background: linear-gradient(180deg, #f0b429 0%, #6d5df6 100%); }
+
+  .eyebrow { font-family: In; font-size: 15px; letter-spacing: 2.4px; text-transform: uppercase;
+             color: #6c7887; font-weight: 600; }
+
+  h1 { font-family: SG; font-weight: 700; font-size: 52px; line-height: 1.07;
+       letter-spacing: -1.3px; margin-top: 15px; color: #ffffff; max-width: 700px; }
+  h1 .hl { background: rgba(240,180,41,.20); border-bottom: 3px solid #f0b429; padding: 0 4px; }
+
+  .sub { font-size: 18.5px; line-height: 1.45; color: #a0abba; margin-top: 16px; max-width: 640px; }
+  .sub b { color: #e3e9f1; font-weight: 600; }
+
+  /* the tally, as a table because that is the actual artifact */
+  table { position: absolute; right: 62px; top: 172px; border-collapse: collapse; width: 424px; }
+  th { font-family: In; font-size: 12.5px; letter-spacing: 1.4px; text-transform: uppercase;
+       color: #6c7887; font-weight: 600; text-align: right; padding: 0 0 9px 22px; }
+  th.l { text-align: left; padding-left: 0; }
+  td { font-size: 17px; padding: 9px 0 9px 22px; text-align: right;
+       border-top: 1px solid #262e3a; font-family: In; color: #a0abba; }
+  td.l { text-align: left; padding-left: 0; color: #e3e9f1; font-weight: 500; }
+  tr.bad td { color: #f08a65; font-weight: 600; }
+  tr.bad td.l { color: #ffffff; font-weight: 600; }
+  .zero { color: #6c7887; }
+
+  .verdict { position: absolute; right: 62px; top: 392px; width: 424px;
+             border-left: 3px solid #f0b429; padding: 10px 0 10px 16px; }
+  .verdict .d { font-family: SG; font-weight: 700; font-size: 25px; color: #ffffff; }
+  .verdict .c { font-size: 14.5px; color: #a0abba; margin-top: 5px; font-family: In; line-height: 1.45; }
+
+  /* the receipt: one real rewrite, exactly as it happened */
+  .receipt { position: absolute; left: 62px; top: 300px; width: 640px;
+             border-top: 1px solid #262e3a; padding-top: 18px; }
+  .lab { font-size: 11.5px; letter-spacing: 1.6px; text-transform: uppercase;
+         color: #6c7887; font-weight: 600; }
+  .q { font-family: SG; font-weight: 500; font-size: 20.5px; color: #e3e9f1; margin-top: 6px; }
+  .arrow { font-size: 14px; color: #6c7887; margin: 9px 0 0; }
+  .arrow b { color: #f0b429; font-weight: 600; }
+  .q2 { font-family: SG; font-weight: 700; font-size: 28px; color: #ffffff; margin-top: 2px; }
+  .conf { margin-top: 13px; display: flex; align-items: baseline; gap: 13px; }
+  .conf .n { font-family: SG; font-weight: 700; font-size: 27px; color: #6c7887; }
+  .conf .to { font-size: 20px; color: #6c7887; }
+  .conf .hi { font-family: SG; font-weight: 700; font-size: 27px; color: #f08a65; }
+  .conf .note { font-size: 14px; color: #a0abba; margin-left: 4px; }
+  .conf .note b { color: #f08a65; font-weight: 600; }
+
+  /* what the shape actually is, so "multi-agent" is not just a word in the sub */
+  .arch { position: absolute; left: 62px; top: 492px; width: 640px;
+          border-top: 1px solid #262e3a; padding-top: 15px; }
+  .chips { display: flex; align-items: baseline; gap: 9px; }
+  .chips .sup { font-family: SG; font-weight: 700; font-size: 15px; color: #f0b429;
+                letter-spacing: .3px; }
+  .chips .to { font-size: 14px; color: #6c7887; margin: 0 2px; }
+  .chips .c { font-family: In; font-weight: 600; font-size: 14px; color: #e3e9f1;
+              border: 1px solid #2c3644; border-radius: 20px; padding: 4px 12px; }
+  .arch .c2 { font-size: 14px; color: #a0abba; margin-top: 11px; line-height: 1.45; }
+  .arch .c2 b { color: #e3e9f1; font-weight: 600; }
+
+  .foot { position: absolute; left: 62px; right: 62px; bottom: 44px;
+          display: flex; justify-content: space-between; align-items: flex-end; }
+  .foot .url { font-family: SG; font-weight: 500; font-size: 22px; color: #f0b429; }
+  .foot .who { font-size: 14.5px; color: #6c7887; text-align: right; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="rail"></div>
+
+  <div class="eyebrow">Agent engineering · measured, not assumed</div>
+  <h1>The agent's one smart idea<br><span class="hl">broke the safety check.</span></h1>
+  <p class="sub">
+    Three agents under a supervisor — every routing decision deterministic, except
+    one: let the researcher <b>rewrite the queries it can’t answer</b>.
+  </p>
+
+  <table>
+    <tr><th class="l">Outcome of 36 rewrites</th><th>Count</th></tr>
+    <tr><td class="l">Queries rescued</td><td class="zero">0</td></tr>
+    <tr><td class="l">Rankings improved</td><td class="zero">0</td></tr>
+    <tr><td class="l">No change</td><td>32</td></tr>
+    <tr class="bad"><td class="l">Defeated the refusal gate</td><td>4</td></tr>
+  </table>
+
+  <div class="verdict">
+    <div class="d">Zero upside. 11% failure rate.</div>
+    <div class="c">
+      Every answerable query already cleared the threshold, so there was
+      nothing to rescue — only something to break.
+    </div>
+  </div>
+
+  <div class="receipt">
+    <div class="lab">The user asked</div>
+    <div class="q">“Write a Python function that reverses a linked list”</div>
+    <div class="arrow">↓ &nbsp;<b>the agent rewrote it to</b></div>
+    <div class="q2">“40 CFR”</div>
+    <div class="conf">
+      <span class="n">0.07</span><span class="to">→</span><span class="hi">0.80</span>
+      <span class="note">confidence — <b>sailed past the 0.20 refusal threshold</b></span>
+    </div>
+  </div>
+
+  <div class="arch">
+    <div class="chips">
+      <span class="sup">SUPERVISOR</span><span class="to">routes →</span>
+      <span class="c">researcher</span><span class="c">writer</span><span class="c">auditor</span>
+    </div>
+    <div class="c2">
+      The auditor decides <b>whose fault</b> a failure was — so sources that cannot support an
+      answer go back to retrieval, not to the writer.
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="url">cfr.bhargavsuhagiya.com</div>
+    <div class="who">
+      Shipped disabled, with the measurement in the repo<br>
+      Third feature in this project killed by its own evidence
+    </div>
+  </div>
+</body>
+</html>

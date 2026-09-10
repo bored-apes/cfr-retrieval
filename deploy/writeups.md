@@ -8,6 +8,90 @@ all of them is the same, and it is deliberately not "I built a RAG app": it is
 
 ## LinkedIn post
 
+Current version — leads with the agent finding. The reranker post (kept below)
+was the previous one; don't run both, the second reads as a rerun of the first.
+
+> I gave an AI agent exactly one decision to make on its own. It used it to talk
+> my safety check out of doing its job.
+>
+> I built a search engine over US federal regulations. The hard part isn't
+> finding the text — it's that you can't search for what you can't name. Ask
+> *"how long can I store waste oil"* and you get nothing, because the regulation
+> says **accumulate**, not store, and **90 days**, not how long.
+>
+> So: let an agent rewrite your question into the regulator's vocabulary before
+> searching. Everyone builds this. It's the textbook agentic-RAG move, and on
+> paper it's the exact fix for the exact problem.
+>
+> I built it. Then I measured it — 36 rewrites against a graded relevance set.
+>
+> **It rescued zero queries.**
+>
+> Not "few". Zero. Because every question the corpus could actually answer was
+> already being found. There was nothing to rescue. What there was, was
+> something to break:
+>
+> "Write a Python function that reverses a linked list"
+> → the agent rewrote it to **"40 CFR"**
+> → confidence went **0.07 → 0.80**
+>
+> 0.20 is the threshold below which the system refuses to answer. That refusal
+> is the most important thing it does — a regulatory search tool that guesses is
+> worse than no tool. And one clever rewrite walked a question about linked
+> lists straight past it, into hazardous waste law, confidently.
+>
+> **11% of the rewrites did this.**
+>
+> So it ships disabled. The code is there, the measurement is in the repo, and a
+> flag turns it on for anyone whose corpus has a real vocabulary gap. On mine it
+> was a plausible idea with zero upside and a 1-in-9 chance of defeating the
+> only guarantee I actually make.
+>
+> Third feature in this project I've built, measured, and switched off.
+>
+> The part I'd defend in an interview is what I *didn't* hand to a model. Three
+> agents — researcher, writer, auditor — under a supervisor that routes on
+> measured state: a calibrated threshold, attempt budgets, and the auditor's
+> verdict on **whose fault** a failure was. Fabricated quotes are the writer's
+> problem and earn a retry. Sources that can't support an answer are the
+> researcher's problem — re-prompting the writer there just buys you a more
+> confident fabrication.
+>
+> Exactly one LLM call in the whole control flow. That was the one that broke it.
+>
+> Live: https://cfr.bhargavsuhagiya.com
+> Code + full measurement: https://github.com/bored-apes/cfr-retrieval
+>
+> #AIEngineering #AgenticAI #LLM #RAG #MachineLearning
+
+**Notes on posting.** The first two lines are the whole game — everything after
+"see more" is read by people who already decided to care. Don't soften "zero" and
+don't move the linked-list example lower; it is the only part a non-technical
+reader can repeat to someone else. Attach `social/cfr-agent-finding.png`.
+
+If you want it shorter, cut from "The part I'd defend" to the end — the post
+survives intact, it just stops being about architecture.
+
+### X / Twitter version
+
+> I gave an AI agent one decision to make on its own.
+>
+> It used it to defeat my safety check.
+>
+> "Write a Python function that reverses a linked list"
+> → agent rewrote it to "40 CFR"
+> → confidence 0.07 → 0.80
+>
+> (0.20 is where the system is supposed to refuse.)
+>
+> 11% of rewrites did this. It rescued 0 queries.
+>
+> Ships disabled. 🧵
+
+---
+
+## LinkedIn post — previous version (reranker)
+
 > I spent two weeks building a search engine for US federal regulations. The
 > most useful thing I did was prove one of my own design decisions was wrong.
 >
@@ -24,8 +108,7 @@ all of them is the same, and it is deliberately not "I built a RAG app": it is
 >
 > **The part that mattered.** Almost every system like this adds a component
 > called a reranker. It's the standard best practice, so I added it. Then I
-> spent two days hand-labelling 1,237 relevance judgements to check whether it
-> actually helped.
+> built a 1,237-judgement relevance set to check whether it actually helped.
 >
 > It didn't. It made the system 56× slower for an improvement statistically
 > indistinguishable from zero.
@@ -41,7 +124,7 @@ all of them is the same, and it is deliberately not "I built a RAG app": it is
 >
 > It now runs entirely in your browser — no server, nothing to pay for.
 >
-> Live: https://bhargavsuhagiya-cfr-retrieval.static.hf.space/
+> Live: https://cfr.bhargavsuhagiya.com
 > Code and full method: https://github.com/bored-apes/cfr-retrieval
 >
 > #MachineLearning #InformationRetrieval #AIEngineering
@@ -66,10 +149,11 @@ client-side* — 2026
   BM25 and dense vectors fused by reciprocal rank fusion, then a cross-encoder
   rerank, with character offsets preserved end to end so every citation
   highlights the exact sentence in the source regulation.
-- Hand-labelled a **1,237-judgement graded relevance set** using TREC-style
-  pooling across five configurations (33% of candidates surfaced by only one
-  config); published **nDCG@10, recall@100 and per-stage latency with 95%
-  bootstrap confidence intervals** for each.
+- Built a **1,237-judgement graded relevance set** using TREC-style pooling
+  across five configurations (33% of candidates surfaced by only one config),
+  judged blind to retrieval provenance with per-row provenance recorded;
+  published **nDCG@10, recall@100 and per-stage latency with 95% bootstrap
+  confidence intervals** for each.
 - **Measurement overturned the architecture**: the cross-encoder cost
   **+1,770 ms p50 for +0.016 nDCG@10** — a paired interval spanning zero.
   Retained it on the evidence that fusion scores are rank-derived (0.032
@@ -86,9 +170,9 @@ client-side* — 2026
 **One-line version**, if space is tight:
 
 > Hybrid BM25 + dense retrieval over federal regulations with verified span
-> citations and calibrated abstention; 1,237 hand-labelled judgements showed the
-> cross-encoder cost 56× latency for statistically zero ranking gain — kept only
-> because it is the sole calibrated signal the abstention gate can use.
+> citations and calibrated abstention; a 1,237-judgement graded relevance set
+> showed the cross-encoder cost 56× latency for statistically zero ranking gain —
+> kept only because it is the sole calibrated signal the abstention gate can use.
 
 **Skills line additions** (AI & Machine Learning): *information retrieval — BM25,
 dense retrieval, reciprocal rank fusion, cross-encoder reranking; IR evaluation
